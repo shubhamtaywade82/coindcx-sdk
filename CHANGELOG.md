@@ -5,6 +5,49 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-10-21
+
+Comprehensive CoinDCX API alignment covering all official documentation endpoints,
+WebSocket protocol conformance, dual-gateway streaming, wallet transfers, and
+contract parameter normalization.
+
+### Added
+
+- **Dual WebSocket gateway support** (`src/websocket/ws-client.ts`, `src/index.ts`) -
+  `CoinDCXClient` now exposes both `ws` (Futures streaming via
+  `wss://stream.coindcx.com`) and `spotWs` (Spot streaming via
+  `wss://stream-spot.coindcx.com`).
+- **Spot WebSocket public channels & private events** (`src/websocket/public-streams.ts`,
+  `src/websocket/private-streams.ts`) - typed support for `currentPrices@spot@10s`
+  and `priceStats@spot@60s`, plus user events `order-update` and `trade-update`.
+- **Wallet & Sub-Account transfers** (`src/rest/spot.ts`, `src/index.ts`) -
+  `client.spot.subAccountTransfer()` (`/exchange/v1/wallets/sub_account_transfer`)
+  and `client.spot.walletTransfer()` (`/exchange/v1/wallets/transfer`) with
+  convenience top-level methods on `CoinDCXClient`.
+- **Futures positions & market data endpoints** (`src/rest/futures.ts`,
+  `src/rest/market-data.ts`) - `client.futures.cancelAllOpenOrders()`,
+  `client.futures.getCurrencyConversions()`, `getFuturesCandles()`,
+  `getFuturesOrderBook()`, `getFuturesTrades()`, `getCurrentPricesRT()`, and
+  `getFuturesInstrument()`.
+- **Flexible parameter normalization** (`src/core/rest-client.ts`, `src/paper/engine.ts`) -
+  order creation across Spot, Margin, and Futures seamlessly accepts either
+  `quantity` or `total_quantity`, and `price` or `price_per_unit`.
+- **Margin & Lend parameter ergonomics** (`src/rest/margin.ts`) - automatic
+  `ecode: 'B'` default for margin orders; normalized Lend request inputs to
+  `currency_short_name` and `duration`.
+
+### Changed
+
+- **WebSocket private authentication protocol** (`src/core/ws-client.ts`) -
+  corrected the authentication payload to emit `join` with
+  `{ channelName: 'coindcx', apiKey, authSignature }` matching CoinDCX's
+  Socket.IO server expectations.
+- **Futures transactions endpoint** (`src/rest/futures.ts`) - corrected URI path
+  to `/exchange/v1/derivatives/futures/positions/transactions`.
+- **Rate limiting rules** (`src/core/rate-limiter.ts`) - aligned default bucket
+  limits with official documentation: 2000 req/min for order endpoints and
+  30 req/min for bulk order cancellation.
+
 ## [1.2.0] - 2026-08-24
 
 Closes the remaining gaps for driving this SDK from an autonomous agent with

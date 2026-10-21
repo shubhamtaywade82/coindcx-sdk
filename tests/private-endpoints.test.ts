@@ -190,5 +190,48 @@ describe('CoinDCX SDK - Private Endpoints (Webmocks)', () => {
       const wallet = await client.futures.account.getWallet();
       expect(wallet[0]?.currency).toBe('USDT');
     });
+
+    it('should perform sub-account transfer', async () => {
+      mockPrivateEndpoint('post', '/exchange/v1/wallets/sub_account_transfer', {
+        success: true,
+        transfer_id: 'sub-tx-123',
+      });
+
+      const res = await client.subAccountTransfer({
+        from_account_id: 'acc1',
+        to_account_id: 'acc2',
+        currency_short_name: 'USDT',
+        amount: 50,
+      });
+      expect(res.success).toBe(true);
+    });
+
+    it('should perform cross-wallet transfer', async () => {
+      mockPrivateEndpoint('post', '/exchange/v1/wallets/transfer', {
+        success: true,
+        transfer_id: 'wall-tx-456',
+      });
+
+      const res = await client.walletTransfer({
+        source_wallet_type: 'spot',
+        destination_wallet_type: 'futures',
+        currency_short_name: 'USDT',
+        amount: 100,
+      });
+      expect(res.success).toBe(true);
+    });
+
+    it('should fetch currency conversions', async () => {
+      mockPrivateEndpoint('post', '/api/v1/derivatives/futures/data/conversions', {
+        symbol: 'USDTINR',
+        margin_currency_short_name: 'INR',
+        target_currency_short_name: 'USDT',
+        conversion_price: 89.5,
+        last_updated_at: 1717754279737,
+      });
+
+      const res = await client.futures.market.getCurrencyConversions();
+      expect(res.conversion_price).toBe(89.5);
+    });
   });
 });

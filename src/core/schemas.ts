@@ -28,17 +28,23 @@ export const CreateOrderRequestSchema = z.object({
 
 export const CreateFuturesOrderRequestSchema = z.object({
   side: OrderSideSchema,
-  order_type: OrderTypeSchema,
-  base_currency: SymbolSchema,
-  quote_currency: SymbolSchema,
-  target_quantity: QuantitySchema,
+  order_type: z.string(),
+  pair: z.string().optional(),
+  base_currency: SymbolSchema.optional(),
+  quote_currency: SymbolSchema.optional(),
+  target_quantity: QuantitySchema.optional(),
+  total_quantity: QuantitySchema.optional(),
   price: PriceSchema.optional(),
+  stop_price: PriceSchema.optional(),
   leverage: LeverageSchema.optional(),
   client_order_id: z.string().optional(),
-  time_in_force: TimeInForceSchema.optional(),
+  time_in_force: z.string().optional(),
   stop_loss: PriceSchema.optional(),
   take_profit: PriceSchema.optional(),
   margin_type: MarginTypeSchema.optional(),
+  position_margin_type: z.enum(['isolated', 'crossed']).optional(),
+  notification: z.enum(['no_notification', 'email_notification']).optional(),
+  margin_currency_short_name: z.string().optional(),
 });
 
 export const CandleSchema = z.object({

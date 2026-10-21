@@ -60,7 +60,7 @@ export function createFuturesToolkit(client: CoinDCXClient): MCPTool[] {
       handler: async (args: CreateFuturesOrderRequest & { dry_run?: boolean }) => {
         const { dry_run, ...order } = args;
         if (dry_run) {
-          assertWithinOrderLimits({ quantity: order.target_quantity, price: order.price }, client.getSafetyLimits());
+          assertWithinOrderLimits({ quantity: order.total_quantity ?? order.target_quantity ?? 0, price: order.price }, client.getSafetyLimits());
           return { dryRun: true, wouldSubmit: order, message: 'Validation passed; no order was submitted (dry_run=true).' };
         }
         return client.futures.trading.createOrder(order);
@@ -256,7 +256,7 @@ export function createSpotToolkit(client: CoinDCXClient): MCPTool[] {
       handler: async (args: CreateSpotOrderRequest & { dry_run?: boolean }) => {
         const { dry_run, ...order } = args;
         if (dry_run) {
-          assertWithinOrderLimits({ quantity: order.quantity, price: order.price }, client.getSafetyLimits());
+          assertWithinOrderLimits({ quantity: order.total_quantity ?? order.quantity ?? 0, price: order.price_per_unit ?? order.price }, client.getSafetyLimits());
           return { dryRun: true, wouldSubmit: order, message: 'Validation passed; no order was submitted (dry_run=true).' };
         }
         return client.spot.createOrder(order);
@@ -384,7 +384,7 @@ export function createPaperToolkit(client: CoinDCXClient): MCPTool[] {
       },
       handler: async (args: CreateFuturesOrderRequest & { dry_run?: boolean }) => {
         const { dry_run, ...order } = args;
-        assertWithinOrderLimits({ quantity: order.target_quantity, price: order.price }, client.getSafetyLimits());
+        assertWithinOrderLimits({ quantity: order.total_quantity ?? order.target_quantity ?? 0, price: order.price }, client.getSafetyLimits());
         if (dry_run) {
           return { dryRun: true, wouldSubmit: order, message: 'Validation passed; no paper order was submitted (dry_run=true).' };
         }

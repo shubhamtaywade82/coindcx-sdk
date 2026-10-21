@@ -3,11 +3,14 @@
 
 export interface CreateSpotOrderRequest {
   side: 'buy' | 'sell';
-  order_type: 'market_order' | 'limit_order' | 'stop_limit_order';
+  order_type: 'market_order' | 'limit_order' | 'stop_limit_order' | string;
   market: string;
   price?: number;
-  quantity: number;
+  price_per_unit?: number;
+  quantity?: number;
+  total_quantity?: number;
   client_order_id?: string;
+  ecode?: string;
   time_in_force?: 'gtc' | 'ioc' | 'fok' | 'post_only';
   trigger_price?: number;
   stop_loss?: number;
@@ -20,26 +23,33 @@ export interface CreateMultipleSpotOrdersRequest {
 
 export interface CreateFuturesOrderRequest {
   side: 'buy' | 'sell';
-  order_type: 'market_order' | 'limit_order' | 'stop_limit_order';
-  base_currency: string;
-  quote_currency: string;
-  target_quantity: number;
-  price: number | undefined;
-  leverage: number | undefined;
-  client_order_id: string | undefined;
-  time_in_force: 'gtc' | 'ioc' | 'fok' | 'post_only' | undefined;
-  stop_loss: number | undefined;
-  take_profit: number | undefined;
-  margin_type: 'isolated' | 'cross' | undefined;
+  order_type: 'market_order' | 'limit_order' | 'stop_limit_order' | 'market' | 'limit' | 'stop_limit' | 'stop_market' | 'take_profit_limit' | 'take_profit_market' | string;
+  pair?: string;
+  base_currency?: string;
+  quote_currency?: string;
+  target_quantity?: number;
+  total_quantity?: number;
+  price?: number | undefined;
+  stop_price?: number | undefined;
+  leverage?: number | undefined;
+  client_order_id?: string | undefined;
+  time_in_force?: 'gtc' | 'ioc' | 'fok' | 'post_only' | 'good_till_cancel' | 'fill_or_kill' | 'immediate_or_cancel' | undefined;
+  stop_loss?: number | undefined;
+  take_profit?: number | undefined;
+  margin_type?: 'isolated' | 'cross' | undefined;
+  position_margin_type?: 'isolated' | 'crossed' | undefined;
+  notification?: 'no_notification' | 'email_notification';
+  margin_currency_short_name?: string;
 }
 
 export interface CreateMarginOrderRequest {
   side: 'buy' | 'sell';
-  order_type: 'market_order' | 'limit_order' | 'stop_limit_order';
+  order_type: 'market_order' | 'limit_order' | 'stop_limit_order' | string;
   market: string;
   price?: number;
   quantity: number;
   leverage?: number;
+  ecode?: string;
   client_order_id?: string;
   time_in_force?: 'gtc' | 'ioc' | 'fok' | 'post_only';
   trigger_price?: number;
@@ -49,7 +59,9 @@ export interface CreateMarginOrderRequest {
 
 export interface EditOrderRequest {
   id: string | number;
-  price: number;
+  price?: number;
+  price_per_unit?: number;
+  client_order_id?: string;
 }
 
 export interface EditFuturesOrderRequest {
@@ -68,8 +80,9 @@ export interface CancelAllOrdersRequest {
 }
 
 export interface CancelAllFuturesOrdersRequest {
-  pair: string | undefined;
-  side: 'buy' | 'sell' | undefined;
+  pair?: string;
+  side?: 'buy' | 'sell';
+  margin_currency_short_name?: string;
 }
 
 export interface CancelFuturesOrderRequest {
@@ -146,9 +159,11 @@ export interface GetMarginOrderRequest {
 export interface FetchLendOrdersRequest {}
 
 export interface LendRequest {
-  currency: string;
+  currency?: string;
+  currency_short_name?: string;
   amount: number;
-  side: 'lend' | 'borrow';
+  duration?: number;
+  side?: 'lend' | 'borrow';
 }
 
 export interface SettleLendOrderRequest {
@@ -240,9 +255,25 @@ export interface GetFuturesWalletRequest {}
 export interface GetFuturesWalletTransactionsRequest {}
 
 export interface FuturesWalletTransferRequest {
-  transfer_type: 'spot_to_futures' | 'futures_to_spot';
+  transfer_type: 'deposit' | 'withdraw' | 'spot_to_futures' | 'futures_to_spot';
   currency_short_name: string;
   amount: number;
+}
+
+export interface CurrencyConversionResponse {
+  symbol: string;
+  margin_currency_short_name: string;
+  target_currency_short_name: string;
+  conversion_price: number;
+  last_updated_at: number;
+}
+
+export interface GetFuturesCandlesticksRequest {
+  pair: string;
+  from: number;
+  to: number;
+  resolution: string;
+  pcode?: string;
 }
 
 export interface WalletTransferRequest {

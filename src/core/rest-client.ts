@@ -83,18 +83,15 @@ export class RestClient {
   }
 
   private getRateLimiter(endpoint: string): TokenBucket {
+    if (endpoint.includes('/cancel_all')) return this.rateLimiters.get('cancelAll') || this.rateLimiters.get('orders')!;
     if (endpoint.includes('/orders/create') || endpoint.includes('/orders/cancel') || endpoint.includes('/orders/edit')) {
       return this.rateLimiters.get('orders')!;
     }
-    if (endpoint.includes('/positions')) {
-      return this.rateLimiters.get('positions')!;
-    }
+    if (endpoint.includes('/positions')) return this.rateLimiters.get('positions')!;
     if (endpoint.includes('/wallets') || endpoint.includes('/balances') || endpoint.includes('/transfer')) {
       return this.rateLimiters.get('wallet')!;
     }
-    if (endpoint.includes('/users/') || endpoint.includes('/account')) {
-      return this.rateLimiters.get('account')!;
-    }
+    if (endpoint.includes('/users/') || endpoint.includes('/account')) return this.rateLimiters.get('account')!;
     if (endpoint.includes('/market_data/') || endpoint.includes('/ticker') || endpoint.includes('/candles') || endpoint.includes('/orderbook') || endpoint.includes('/trade_history')) {
       return this.rateLimiters.get('marketData')!;
     }

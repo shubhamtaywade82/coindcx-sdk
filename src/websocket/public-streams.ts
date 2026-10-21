@@ -9,6 +9,8 @@ export interface PublicStreamCallbacks {
   onTrade?: (data: WsTradeData) => void;
   onPriceChange?: (data: WsPriceChange) => void;
   onBatchPrices?: (data: WsBatchPrices) => void;
+  onSpotBatchPrices?: (data: any) => void;
+  onSpotPriceStats?: (data: any) => void;
 }
 
 export class PublicStreams {
@@ -44,6 +46,14 @@ export class PublicStreams {
 
     this.ws.on('currentPrices@futures#update', (data: any) => {
       this.emit('batchPrices', this.normalizeBatchPrices(data));
+    });
+
+    this.ws.on('currentPrices@spot#update', (data: any) => {
+      this.emit('spotBatchPrices', data);
+    });
+
+    this.ws.on('priceStats@spot#update', (data: any) => {
+      this.emit('spotPriceStats', data);
     });
   }
 
@@ -229,6 +239,22 @@ export class PublicStreams {
     this.untrackSubscription(pair, channel);
   }
 
+  subscribeCurrentPricesSpot(): void {
+    this.ws.subscribe('currentPrices@spot@10s');
+  }
+
+  unsubscribeCurrentPricesSpot(): void {
+    this.ws.unsubscribe('currentPrices@spot@10s');
+  }
+
+  subscribePriceStatsSpot(): void {
+    this.ws.subscribe('priceStats@spot@60s');
+  }
+
+  unsubscribePriceStatsSpot(): void {
+    this.ws.unsubscribe('priceStats@spot@60s');
+  }
+
   private trackSubscription(pair: string, channel: string): void {
     if (!this.subscribedPairs.has(pair)) {
       this.subscribedPairs.set(pair, new Set());
@@ -247,9 +273,7 @@ export class PublicStreams {
   }
 
   getSubscriptions(pair?: string): string[] {
-    if (pair) {
-      return Array.from(this.subscribedPairs.get(pair) || []);
-    }
+    if (pair) return Array.from(this.subscribedPairs.get(pair) || []);
     const all: string[] = [];
     this.subscribedPairs.forEach(channels => all.push(...channels));
     return all;

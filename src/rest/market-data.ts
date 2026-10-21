@@ -60,6 +60,22 @@ export class MarketDataApi extends RestClient {
     return this.unsignedRequest('GET', '/market_data/orderbook', { pair, depth }, true);
   }
 
+  async getFuturesCandlesticks(params: { pair: string; from: number; to: number; resolution: string; pcode?: string }): Promise<any> {
+    return this.unsignedRequest('GET', '/market_data/candlesticks', { ...params, pcode: params.pcode ?? 'f' }, true);
+  }
+
+  async getFuturesTrades(pair: string): Promise<any> {
+    return this.unsignedRequest('GET', '/exchange/v1/derivatives/futures/data/trades', { pair });
+  }
+
+  async getFuturesV3OrderBook(pair: string, depth = 50): Promise<any> {
+    return this.unsignedRequest('GET', `/market_data/v3/orderbook/${pair}-futures/${depth}`, {}, true);
+  }
+
+  async getFuturesCurrentPricesRT(): Promise<any> {
+    return this.unsignedRequest('GET', '/market_data/v3/current_prices/futures/rt', {}, true);
+  }
+
   static nowSeconds(): number {
     return Math.floor(Date.now() / 1000);
   }

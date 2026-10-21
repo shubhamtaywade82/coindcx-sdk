@@ -88,9 +88,13 @@ export class WsClient extends EventEmitter<WsEventMap> {
     this.socket.on('new-trade', (data: any) => this.emit('new-trade', data));
     this.socket.on('price-change', (data: any) => this.emit('price-change', data));
     this.socket.on('currentPrices@futures#update', (data: any) => this.emit('currentPrices@futures#update', data));
+    this.socket.on('currentPrices@spot#update', (data: any) => this.emit('currentPrices@spot#update', data));
+    this.socket.on('priceStats@spot#update', (data: any) => this.emit('priceStats@spot#update', data));
     this.socket.on('df-order-update', (data: any) => this.emit('df-order-update', data));
+    this.socket.on('order-update', (data: any) => this.emit('order-update', data));
     this.socket.on('df-position-update', (data: any) => this.emit('df-position-update', data));
     this.socket.on('balance-update', (data: any) => this.emit('balance-update', data));
+    this.socket.on('trade-update', (data: any) => this.emit('trade-update', data));
   }
 
   private scheduleReconnect(): void {
@@ -169,12 +173,13 @@ export class WsClient extends EventEmitter<WsEventMap> {
     }
 
     const channel = 'coindcx';
-    const payload = { channelName: channel };
+    const payload = { channel };
     const signature = crypto.createHmac('sha256', this.apiSecret).update(JSON.stringify(payload)).digest('hex');
 
-    this.socket?.emit('events', {
+    // CoinDCX official spec requires emitting 'join' with { channelName, apiKey, authSignature }
+    this.socket?.emit('join', {
       channelName: channel,
-      authKey: this.apiKey,
+      apiKey: this.apiKey,
       authSignature: signature,
     });
     

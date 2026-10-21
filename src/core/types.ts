@@ -74,6 +74,7 @@ export interface CoinDCXClientOptions {
   baseUrl?: string;
   publicApiBase?: string;
   wsUrl?: string;
+  spotWsUrl?: string;
   paperMode?: boolean;
   paperEngineHandler?: (config: any) => Promise<any>;
   initialBalance?: number;
@@ -122,6 +123,7 @@ export interface WsClientOptions {
   apiKey?: string;
   apiSecret?: string;
   wsUrl?: string;
+  spotWsUrl?: string;
 }
 
 export interface RateLimitConfig {

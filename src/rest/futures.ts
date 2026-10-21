@@ -19,6 +19,8 @@ import {
   RemoveFuturesMarginRequest,
   CancelAllOrdersForPositionRequest,
   GetFuturesTransactionsRequest,
+  GetFuturesCandlesticksRequest,
+  CurrencyConversionResponse,
   FuturesOrderResponse,
   PositionResponse,
   FuturesWalletResponse,
@@ -39,11 +41,18 @@ export class FuturesApi extends RestClient {
   }
 
   async createOrder(params: CreateFuturesOrderRequest): Promise<FuturesOrderResponse> {
-    assertWithinOrderLimits({ quantity: params.target_quantity, price: params.price }, this.safetyLimits);
-    if (!params.client_order_id) {
-      params.client_order_id = `js_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    }
-    return this.signedRequest('POST', '/exchange/v1/derivatives/futures/orders/create', params);
+    const total_quantity = params.total_quantity ?? params.target_quantity ?? 0;
+    assertWithinOrderLimits({ quantity: total_quantity, price: params.price }, this.safetyLimits);
+    const client_order_id = params.client_order_id ?? `js_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const pair = params.pair ?? (params.base_currency && params.quote_currency ? `B-${params.base_currency}_${params.quote_currency}` : undefined);
+    const payload: any = {
+      ...params,
+      client_order_id,
+      notification: params.notification ?? 'no_notification',
+    };
+    if (pair) payload.pair = pair;
+    if (total_quantity !== undefined) payload.total_quantity = total_quantity;
+    return this.signedRequest('POST', '/exchange/v1/derivatives/futures/orders/create', payload);
   }
 
   async listOrders(params: ListFuturesOrdersRequest = {}): Promise<FuturesOrderResponse[]> {
@@ -58,8 +67,12 @@ export class FuturesApi extends RestClient {
     return this.signedRequest('POST', '/exchange/v1/derivatives/futures/orders/cancel', params);
   }
 
-  async cancelAllOrders(params: CancelAllFuturesOrdersRequest): Promise<any> {
+  async cancelAllOrders(params: CancelAllFuturesOrdersRequest = {}): Promise<any> {
     return this.signedRequest('POST', '/exchange/v1/derivatives/futures/orders/cancel_all', params);
+  }
+
+  async cancelAllOpenOrders(marginCurrency = 'USDT'): Promise<any> {
+    return this.signedRequest('POST', '/exchange/v1/derivatives/futures/positions/cancel_all_open_orders', { margin_currency_short_name: marginCurrency });
   }
 
   async editOrder(params: EditFuturesOrderRequest): Promise<FuturesOrderResponse> {
@@ -71,7 +84,7 @@ export class FuturesApi extends RestClient {
   }
 
   async closePosition(params: CloseFuturesPositionRequest): Promise<any> {
-    return this.signedRequest('POST', '/exchange/v1/derivatives/futures/positions/close', params);
+    return this.signedRequest('POST', '/exchange/v1/derivatives/futures/positions/exit', params);
   }
 
   async exitPosition(params: ExitFuturesPositionRequest): Promise<any> {
@@ -111,7 +124,7 @@ export class FuturesApi extends RestClient {
   }
 
   async getTransactions(params: GetFuturesTransactionsRequest = {}): Promise<any[]> {
-    return this.signedRequest('POST', '/exchange/v1/derivatives/futures/transactions', params);
+    return this.signedRequest('POST', '/exchange/v1/derivatives/futures/positions/transactions', params);
   }
 
   async getWallet(): Promise<FuturesWalletResponse[]> {
@@ -123,11 +136,16 @@ export class FuturesApi extends RestClient {
   }
 
   async walletTransfer(params: {
-    transfer_type: 'spot_to_futures' | 'futures_to_spot';
+    transfer_type: 'deposit' | 'withdraw' | 'spot_to_futures' | 'futures_to_spot';
     currency_short_name: string;
     amount: number;
   }): Promise<WalletTransferResponse> {
-    return this.signedRequest('POST', '/exchange/v1/derivatives/futures/wallets/transfer', params);
+    const transfer_type = (params.transfer_type === 'spot_to_futures' || params.transfer_type === 'deposit') ? 'deposit' : 'withdraw';
+    return this.signedRequest('POST', '/exchange/v1/derivatives/futures/wallets/transfer', {
+      transfer_type,
+      currency_short_name: params.currency_short_name,
+      amount: params.amount,
+    });
   }
 
   async getActiveInstruments(marginCurrency = 'USDT'): Promise<string[]> {
@@ -167,6 +185,13 @@ export class FuturesApi extends RestClient {
     throw new Error(`Instrument ${pair} not found`);
   }
 
+  async getFuturesInstrument(pair: string, marginCurrency = 'USDT'): Promise<InstrumentResponse> {
+    return this.unsignedRequest('GET', '/exchange/v1/derivatives/futures/data/instrument', {
+      pair,
+      margin_currency_short_name: marginCurrency,
+    });
+  }
+
   async getCandles(pair: string, interval: string, limit = 500, startTime?: number, endTime?: number): Promise<CandleResponse[]> {
     const params: any = { pair, interval, limit };
     if (startTime) params.startTime = startTime * 1000;
@@ -175,23 +200,46 @@ export class FuturesApi extends RestClient {
     return Array.isArray(res) ? res.reverse() : (res as CandleResponse[]);
   }
 
+  async getFuturesCandles(params: GetFuturesCandlesticksRequest): Promise<any> {
+    return this.unsignedRequest('GET', '/market_data/candlesticks', { ...params, pcode: params.pcode ?? 'f' }, true);
+  }
+
   async getTradeHistory(pair: string, limit = 50): Promise<TradeResponse[]> {
     return this.unsignedRequest('GET', '/market_data/trade_history', { pair, limit }, true);
+  }
+
+  async getFuturesTrades(pair: string): Promise<any> {
+    return this.unsignedRequest('GET', '/exchange/v1/derivatives/futures/data/trades', { pair });
   }
 
   async getOrderBook(pair: string, depth = 50): Promise<OrderBookResponse> {
     return this.unsignedRequest('GET', '/market_data/orderbook', { pair, depth }, true);
   }
 
+  async getFuturesOrderBook(pair: string, depth = 50): Promise<any> {
+    return this.unsignedRequest('GET', `/market_data/v3/orderbook/${pair}-futures/${depth}`, {}, true);
+  }
+
   async getTicker(): Promise<TickerResponse[]> {
     return this.unsignedRequest('GET', '/exchange/ticker', {}, true);
+  }
+
+  async getCurrentPricesRT(): Promise<any> {
+    return this.unsignedRequest('GET', '/market_data/v3/current_prices/futures/rt', {}, true);
   }
 
   async getFundingRateHistory(pair: string, limit = 50): Promise<FundingRateResponse[]> {
     return this.unsignedRequest('GET', '/exchange/v1/derivatives/futures/data/funding_rate', { pair, limit }, true);
   }
 
-  async getStats(): Promise<FuturesStatsResponse> {
+  async getStats(pair?: string): Promise<FuturesStatsResponse> {
+    if (pair) {
+      return this.signedRequest('POST', `/api/v1/derivatives/futures/data/stats?pair=${pair}`, {});
+    }
     return this.unsignedRequest('GET', '/api/v1/derivatives/futures/data/stats', {}, true);
+  }
+
+  async getCurrencyConversions(): Promise<CurrencyConversionResponse> {
+    return this.signedRequest('POST', '/api/v1/derivatives/futures/data/conversions', {});
   }
 }

@@ -85,7 +85,8 @@ export class MultiEndpointRateLimiter {
 }
 
 export const coinDcxRateLimits = {
-  orders: { capacity: 100, refillRate: 1.67 },
+  orders: { capacity: 2000, refillRate: 33.33 },
+  cancelAll: { capacity: 30, refillRate: 0.5 },
   positions: { capacity: 50, refillRate: 0.83 },
   account: { capacity: 200, refillRate: 3.33 },
   marketData: { capacity: 300, refillRate: 5 },

@@ -11,6 +11,7 @@ import { SnapshotOps } from './ops/snapshot';
 import { PaperTradingEngine } from './paper/engine';
 import { CoinDCXSDKOptions } from './core/types';
 import { TradingSafetyLimits } from './core/safety';
+import { SubAccountTransferRequest, WalletTransferRequest } from './models';
 
 export { CoinDCXSDKOptions } from './core/types';
 
@@ -24,6 +25,7 @@ export class CoinDCXClient {
   };
   public readonly marketData: MarketDataApi;
   public readonly ws: WsClient;
+  public readonly spotWs: WsClient;
   public readonly publicStreams: PublicStreams;
   public readonly privateStreams: PrivateStreams;
   public readonly ops: {
@@ -80,6 +82,12 @@ export class CoinDCXClient {
       wsUrl: options.wsUrl ?? undefined,
     });
 
+    this.spotWs = new WsClient({
+      apiKey: options.apiKey ?? undefined,
+      apiSecret: options.apiSecret ?? undefined,
+      wsUrl: options.spotWsUrl ?? 'wss://stream-spot.coindcx.com',
+    });
+
     this.publicStreams = new PublicStreams(this.ws);
     this.privateStreams = new PrivateStreams(this.ws);
 
@@ -99,7 +107,7 @@ export class CoinDCXClient {
       payload = await this.paper.placeOrder(data);
     } else if (url.includes('/orders/details')) {
       payload = this.paper.getOrder(String(data.id ?? data.order_id ?? ''));
-    } else if (url.includes('/orders/cancel_all')) {
+    } else if (url.includes('/orders/cancel_all') || url.includes('/cancel_all_open_orders')) {
       payload = [];
     } else if (url.includes('/orders/cancel')) {
       payload = await this.paper.cancelOrder(String(data.id ?? data.order_id ?? ''));
@@ -132,8 +140,17 @@ export class CoinDCXClient {
     };
   };
 
-  async connectWebsocket(): Promise<void> {
-    await this.ws.connect();
+  async connectWebsocket(target: 'futures' | 'spot' | 'both' = 'both'): Promise<void> {
+    if (target === 'futures' || target === 'both') await this.ws.connect();
+    if (target === 'spot' || target === 'both') await this.spotWs.connect();
+  }
+
+  async subAccountTransfer(params: SubAccountTransferRequest): Promise<any> {
+    return this.spot.subAccountTransfer(params);
+  }
+
+  async walletTransfer(params: WalletTransferRequest): Promise<any> {
+    return this.spot.walletTransfer(params);
   }
 
   subscribePrivateStreams(): void {
@@ -184,6 +201,7 @@ export class CoinDCXClient {
 
   disconnect(): void {
     this.ws.disconnect();
+    this.spotWs.disconnect();
   }
 
   static nowSeconds(): number {

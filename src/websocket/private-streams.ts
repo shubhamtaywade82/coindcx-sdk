@@ -6,6 +6,7 @@ export interface PrivateStreamCallbacks {
   onOrderUpdate?: (data: WsOrderUpdate) => void;
   onPositionUpdate?: (data: WsPositionUpdate) => void;
   onBalanceUpdate?: (data: WsBalanceUpdate) => void;
+  onTradeUpdate?: (data: any) => void;
 }
 
 export class PrivateStreams {
@@ -19,19 +20,23 @@ export class PrivateStreams {
   }
 
   private setupHandlers(): void {
-    this.ws.on('df-order-update', (data: any) => {
-      const normalized = this.normalizeOrderUpdate(data);
-      this.emit('orderUpdate', normalized);
-    });
+    const handleOrder = (data: any) => {
+      this.emit('orderUpdate', this.normalizeOrderUpdate(data));
+    };
+    this.ws.on('df-order-update', handleOrder);
+    this.ws.on('order-update', handleOrder);
 
     this.ws.on('df-position-update', (data: any) => {
-      const normalized = this.normalizePositionUpdate(data);
-      this.emit('positionUpdate', normalized);
+      this.emit('positionUpdate', this.normalizePositionUpdate(data));
     });
 
     this.ws.on('balance-update', (data: any) => {
-      const normalized = this.normalizeBalanceUpdate(data);
-      this.emit('balanceUpdate', normalized);
+      this.emit('balanceUpdate', this.normalizeBalanceUpdate(data));
+    });
+
+    this.ws.on('trade-update', (data: any) => {
+      const p = data.data && typeof data.data === 'string' ? JSON.parse(data.data) : data;
+      this.emit('tradeUpdate', p);
     });
   }
 

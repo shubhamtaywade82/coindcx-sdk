@@ -27,10 +27,9 @@ export class MarginApi extends RestClient {
 
   async createOrder(params: CreateMarginOrderRequest): Promise<MarginOrderResponse> {
     assertWithinOrderLimits({ quantity: params.quantity, price: params.price }, this.safetyLimits);
-    if (!params.client_order_id) {
-      params.client_order_id = `js_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    }
-    return this.signedRequest('POST', '/exchange/v1/margin/create', params);
+    const client_order_id = params.client_order_id ?? `js_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const payload = { ...params, ecode: params.ecode ?? 'B', client_order_id };
+    return this.signedRequest('POST', '/exchange/v1/margin/create', payload);
   }
 
   async cancelOrder(params: CancelMarginOrderRequest): Promise<any> {
@@ -78,7 +77,12 @@ export class MarginApi extends RestClient {
   }
 
   async lend(params: LendRequest): Promise<LendOrderResponse> {
-    return this.signedRequest('POST', '/exchange/v1/funding/lend', params);
+    const payload = {
+      currency_short_name: params.currency_short_name ?? params.currency,
+      amount: params.amount,
+      duration: params.duration ?? 7,
+    };
+    return this.signedRequest('POST', '/exchange/v1/funding/lend', payload);
   }
 
   async settleLendOrder(params: SettleLendOrderRequest): Promise<any> {

@@ -1,6 +1,6 @@
 {
   "name": "@nemesis-oss/coindcx-sdk",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Production-grade TypeScript SDK for CoinDCX Spot, Margin, and Futures trading with Socket.IO WebSocket support, local paper engine, risk ops, and MCP toolkits for trading agents",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
