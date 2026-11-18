@@ -24,7 +24,7 @@ export class SizingOps {
 
     const riskAmount = accountBalance * (riskPercent / 100);
     const priceDiff = Math.abs(entryPrice - stopLossPrice);
-    const quantity = riskAmount / priceDiff;
+    const quantity = riskAmount / priceDiff / leverage;
 
     let finalQuantity = quantity;
     if (maxPositionSize && finalQuantity > maxPositionSize) {
