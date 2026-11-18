@@ -1,0 +1,40 @@
+# Called by release-please.yml only. That file must be the trusted-publisher
+# entry on npmjs.com, because trusted publishing validates the calling workflow.
+# Publishes with npm trusted publishing (OIDC): no npm token is used.
+
+name: Publish
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: 'npm dist-tag to publish under'
+        required: false
+        type: string
+        default: 'latest'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Pin npm for trusted publishing
+        run: npm install -g npm@^11.21.0
+      - run: npm ci --ignore-scripts
+      # Release gates. They mirror the package's prepublishOnly, which --ignore-scripts skips.
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test -- --ci
+      - run: npm run build
+      - run: npm run check:types
+      - name: Publish to npm (trusted publishing)
+        env:
+          NPM_DIST_TAG: ${{ inputs.tag || 'latest' }}
+        run: npm publish --provenance --access public --tag "$NPM_DIST_TAG" --ignore-scripts
