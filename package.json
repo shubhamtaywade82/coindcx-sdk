@@ -57,7 +57,7 @@
     "lint:fix": "eslint src --ext .ts --fix",
     "test": "jest",
     "test:watch": "jest --watch",
-    "check:types": "npx --yes @arethetypeswrong/cli@latest --pack .",
+    "check:types": "attw --pack .",
     "smoke": "tsx scripts/smoke-test.ts",
     "mcp": "tsx bin/mcp.ts",
     "example:quickstart": "tsx examples/quickstart.ts",
