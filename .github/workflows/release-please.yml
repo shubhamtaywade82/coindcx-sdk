@@ -1,0 +1,59 @@
+# Automated versioning and publishing (same flow as ollama-sdk).
+#
+# On every push to main, release-please reads the Conventional Commit subjects
+# since the last release and keeps one release PR open with the next version in
+# package.json:
+#   fix: → patch · feat: → minor · feat!: or a BREAKING CHANGE footer → major
+#   (chore/docs/test/ci/refactor commits do not trigger a release)
+#
+# Merging the release PR tags vX.Y.Z, creates the GitHub release and calls
+# publish.yml directly. A release created with GITHUB_TOKEN does not trigger
+# publish.yml's own events, so this call is the only publish path.
+#
+# Manual publish: workflow_dispatch publishes the current main without creating
+# a release. Trusted publishing validates the calling workflow, so every publish
+# goes through this file. The trusted-publisher entry names release-please.yml.
+
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'npm dist-tag to publish under (publish-only run, no release created)'
+        required: false
+        default: 'latest'
+        type: choice
+        options: ['latest', 'next', 'beta']
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  publish:
+    needs: release-please
+    if: >-
+      always() && !cancelled() && (github.event_name == 'workflow_dispatch' ||
+      (needs.release-please.result == 'success' && needs.release-please.outputs.release_created == 'true'))
+    uses: ./.github/workflows/publish.yml
+    with:
+      tag: ${{ inputs.tag || 'latest' }}
+    permissions:
+      contents: read
+      id-token: write
